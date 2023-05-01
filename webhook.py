@@ -1,8 +1,21 @@
+import os
+import sys
 from airflow import DAG
 from datetime import datetime, timedelta
-from airflow.operators.dummy_operator import DummyOperator
+from airflow.operators.python_operator import PythonOperator
+
+sys.path.insert(0,os.path.abspath(os.path.dirname(__file__)))
+
+from common.teams_message_operator import TeamsMessageOperator
 
 DAG_ID = 'Webhook'
+
+def throw_exception():
+    statuss = 1
+    if statuss == 1:
+        print("Tudo certo, pode continuar")
+    else:
+        raise Exception('deu ruim')
 
 default_args = {
     'owner': 'Webhook',
@@ -23,10 +36,20 @@ with DAG(
     tags=["Webhook"]
     ) as dag:
 
-    start_task = DummyOperator(
-        task_id = 'start_task')
+    start_task = PythonOperator(
+        task_id = 'start_task',
+        python_callable = throw_exception
+        )
 
-    end_task = DummyOperator(
-        task_id='end_task')
+    teste_task = PythonOperator(
+        task_id = 'teste_task',
+        python_callable = throw_exception
+        )
 
-    start_task >> end_task
+    send_teams_message = TeamsMessageOperator(
+        task_id = 'send_teams_message',
+        mention_on_fail = ["CS383950"],
+        hookurl = 'link do hook do teams'
+        )
+    
+    start_task >> teste_task >> send_teams_message 
